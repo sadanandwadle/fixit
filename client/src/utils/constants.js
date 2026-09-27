@@ -1,0 +1,78 @@
+export const SERVICE_CATEGORIES = [
+  {
+    name: 'Electrician',
+    icon: 'Zap',
+    description: 'Wiring, fixtures, switches, power outages, and short circuits.',
+    color: 'from-amber-500 to-yellow-600',
+    bgColor: 'bg-amber-50',
+    textColor: 'text-amber-600',
+    borderColor: 'border-amber-200',
+    tag: 'Safety Verified',
+  },
+  {
+    name: 'Plumber',
+    icon: 'Wrench',
+    description: 'Pipe leaks, taps, bathroom fittings, unclogging, and drainage.',
+    color: 'from-blue-500 to-cyan-600',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    borderColor: 'border-blue-200',
+    tag: 'Quick Response',
+  },
+  {
+    name: 'AC Technician',
+    icon: 'Wind',
+    description: 'Deep foam cleaning, gas charging, compressor repair, and installation.',
+    color: 'from-cyan-500 to-teal-600',
+    bgColor: 'bg-cyan-50',
+    textColor: 'text-cyan-600',
+    borderColor: 'border-cyan-200',
+    tag: 'Cooling Specialist',
+  },
+  {
+    name: 'Mechanic',
+    icon: 'Car',
+    description: 'Two-wheeler & car doorstep inspection, engine oil, and breakdown.',
+    color: 'from-rose-500 to-red-600',
+    bgColor: 'bg-rose-50',
+    textColor: 'text-rose-600',
+    borderColor: 'border-rose-200',
+    tag: 'Doorstep Service',
+  },
+  {
+    name: 'Cleaner',
+    icon: 'Sparkles',
+    description: 'Deep home, kitchen, bathroom cleaning, floor polishing & sanitization.',
+    color: 'from-emerald-500 to-green-600',
+    bgColor: 'bg-emerald-50',
+    textColor: 'text-emerald-600',
+    borderColor: 'border-emerald-200',
+    tag: 'Eco-Friendly',
+  },
+  {
+    name: 'Computer Repair',
+    icon: 'Laptop',
+    description: 'PC/laptop diagnostics, OS reinstall, hardware upgrades, and screen fixes.',
+    color: 'from-violet-500 to-purple-600',
+    bgColor: 'bg-violet-50',
+    textColor: 'text-violet-600',
+    borderColor: 'border-violet-200',
+    tag: 'Hardware & OS',
+  },
+];
+
+export const USER_ROLES = {
+  CUSTOMER: 'customer',
+  PROVIDER: 'provider',
+  ADMIN: 'admin',
+};
+
+export const BOOKING_STATUSES = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  CONFIRMED: 'confirmed',
+  IN_PROGRESS: 'in-progress',
+  COMPLETED: 'completed',
+  REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
+};

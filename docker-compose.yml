@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database Container (for local containerized testing)
+  # NOTE: In cloud production, point MONGODB_URI in server to MongoDB Atlas instead.
+  mongo:
+    image: mongo:7.0
+    container_name: fixit-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - fixit_mongodb_data:/data/db
+    networks:
+      - fixit-network
+
+  # 2. FIXIT Express Backend API
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: fixit-server
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/fixit
+      - JWT_SECRET=fixit_docker_secure_random_jwt_secret_key_2026
+      - JWT_EXPIRE=30d
+      - CLIENT_URL=http://localhost,http://localhost:5173
+    depends_on:
+      - mongo
+    networks:
+      - fixit-network
+
+  # 3. FIXIT React SPA Frontend
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: fixit-client
+    restart: unless-stopped
+    ports:
+      - '5173:80'
+    depends_on:
+      - server
+    networks:
+      - fixit-network
+
+volumes:
+  fixit_mongodb_data:
+    driver: local
+
+networks:
+  fixit-network:
+    driver: bridge
