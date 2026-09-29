@@ -25,6 +25,10 @@ const UserSchema = new mongoose.Schema({
     minlength: 6,
     select: false // Ensures password is not returned in queries by default
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

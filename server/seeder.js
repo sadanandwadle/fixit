@@ -106,6 +106,34 @@ const seedData = async () => {
     );
     
     console.log('Providers seeded.');
+    
+    // Seed Admin (if env variables provided)
+    if (process.env.ADMIN_SEED_EMAIL && process.env.ADMIN_SEED_PASSWORD) {
+      const adminEmail = process.env.ADMIN_SEED_EMAIL;
+      let admin = await User.findOne({ email: adminEmail });
+      
+      const adminHashedPassword = await bcrypt.hash(process.env.ADMIN_SEED_PASSWORD, salt);
+      
+      if (!admin) {
+        await User.create({
+          name: 'Platform Admin',
+          email: adminEmail,
+          password: adminHashedPassword,
+          role: 'admin',
+          isActive: true
+        });
+        console.log(`Admin seeded with email: ${adminEmail}`);
+      } else {
+        admin.password = adminHashedPassword;
+        admin.role = 'admin';
+        admin.isActive = true;
+        await admin.save();
+        console.log(`Admin updated for email: ${adminEmail}`);
+      }
+    } else {
+      console.log('Skipping Admin seed (ADMIN_SEED_EMAIL or ADMIN_SEED_PASSWORD not set).');
+    }
+
     console.log('Seed completed successfully!');
     process.exit();
   } catch (error) {

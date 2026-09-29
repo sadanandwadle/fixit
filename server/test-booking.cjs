@@ -373,6 +373,121 @@ async function testBookingLogic() {
     const t61 = await request('/providers?lat=80.0&lng=80.0&radius=10', 'GET');
     console.log(`T61 Empty nearby result handled correctly: ${t61.data.data.length === 0 ? 'PASS' : 'FAIL'}`);
 
+    console.log('--- PHASE 9: ADMIN TESTS ---');
+    
+    // Create an Admin user directly via DB for testing
+    const adminEmail = 'admin_test@test.com';
+    let adminUser = await User.findOne({ email: adminEmail });
+    if (!adminUser) {
+      const salt = await require('bcrypt').genSalt(10);
+      const hash = await require('bcrypt').hash('password123', salt);
+      adminUser = await User.create({ name: 'Admin Test', email: adminEmail, password: hash, role: 'admin' });
+    }
+    const adminRes = await request('/auth/login', 'POST', { email: adminEmail, password: 'password123' });
+    const adminToken = adminRes.data.token;
+
+    // ADMIN AUTHORIZATION
+    // T62 Unauthenticated admin endpoint
+    const t62 = await request('/admin/dashboard/stats', 'GET');
+    console.log(`T62 Unauthenticated admin endpoint -> 401: ${t62.status === 401 ? 'PASS' : 'FAIL'}`);
+
+    // T63 Customer accessing admin endpoint
+    const t63 = await request('/admin/dashboard/stats', 'GET', null, custToken);
+    console.log(`T63 Customer accessing admin endpoint -> 403: ${t63.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T64 Provider accessing admin endpoint
+    const t64 = await request('/admin/dashboard/stats', 'GET', null, provToken);
+    console.log(`T64 Provider accessing admin endpoint -> 403: ${t64.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T65 Admin accessing admin endpoint
+    const t65 = await request('/admin/dashboard/stats', 'GET', null, adminToken);
+    console.log(`T65 Admin accessing admin endpoint -> success: ${t65.status === 200 ? 'PASS' : 'FAIL'}`);
+
+    // DASHBOARD
+    // T66 Dashboard stats return real data
+    console.log(`T66 Dashboard stats real data: ${t65.data.data.users.total > 0 ? 'PASS' : 'FAIL'}`);
+
+    // USERS
+    // T67 Admin can list users
+    const t67 = await request('/admin/users', 'GET', null, adminToken);
+    console.log(`T67 Admin can list users: ${t67.status === 200 && t67.data.data.length > 0 ? 'PASS' : 'FAIL'}`);
+    const someCustId = t67.data.data.find(u => u.role === 'customer')._id;
+
+    // T68 Admin can deactivate user
+    const t68 = await request(`/admin/users/${someCustId}/status`, 'PUT', { isActive: false }, adminToken);
+    console.log(`T68 Admin can deactivate user: ${t68.status === 200 && t68.data.data.isActive === false ? 'PASS' : 'FAIL'}`);
+
+    // T69 Admin can reactivate user
+    const t69 = await request(`/admin/users/${someCustId}/status`, 'PUT', { isActive: true }, adminToken);
+    console.log(`T69 Admin can reactivate user: ${t69.status === 200 && t69.data.data.isActive === true ? 'PASS' : 'FAIL'}`);
+
+    // T70 Non-admin cannot deactivate
+    const t70 = await request(`/admin/users/${someCustId}/status`, 'PUT', { isActive: false }, custToken);
+    console.log(`T70 Non-admin cannot deactivate user: ${t70.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // PROVIDERS
+    // T71 Admin can list providers
+    const t71 = await request('/admin/providers', 'GET', null, adminToken);
+    console.log(`T71 Admin can list providers: ${t71.status === 200 && t71.data.data.length > 0 ? 'PASS' : 'FAIL'}`);
+    
+    // T72 Admin can unverify provider
+    const t72 = await request(`/admin/providers/${janeId}/verify`, 'PUT', { verified: false }, adminToken);
+    console.log(`T72 Admin can unverify provider: ${t72.status === 200 && t72.data.data.verified === false ? 'PASS' : 'FAIL'}`);
+
+    // T73 Admin can verify provider
+    const t73 = await request(`/admin/providers/${janeId}/verify`, 'PUT', { verified: true }, adminToken);
+    console.log(`T73 Admin can verify provider: ${t73.status === 200 && t73.data.data.verified === true ? 'PASS' : 'FAIL'}`);
+
+    // SERVICES
+    // T74 Admin can list services
+    const t74 = await request('/admin/services', 'GET', null, adminToken);
+    console.log(`T74 Admin can list services: ${t74.status === 200 && t74.data.data.length > 0 ? 'PASS' : 'FAIL'}`);
+
+    // T75 Admin can create service
+    const t75 = await request('/admin/services', 'POST', { name: 'Test Service', category: 'Test', description: 'Test' }, adminToken);
+    console.log(`T75 Admin can create service: ${t75.status === 201 ? 'PASS' : 'FAIL'}`);
+    const newServiceId = t75.data.data ? t75.data.data._id : null;
+
+    // T76 Admin can deactivate service
+    const t76 = await request(`/admin/services/${newServiceId}`, 'PUT', { active: false }, adminToken);
+    console.log(`T76 Admin can deactivate service: ${t76.status === 200 && t76.data.data.active === false ? 'PASS' : 'FAIL'}`);
+
+    // BOOKINGS
+    // T77 Admin can monitor bookings
+    const t77 = await request('/admin/bookings', 'GET', null, adminToken);
+    console.log(`T77 Admin can monitor bookings: ${t77.status === 200 && t77.data.data.length > 0 ? 'PASS' : 'FAIL'}`);
+
+    // REVIEWS
+    // T78 Admin can list reviews
+    const t78 = await request('/admin/reviews', 'GET', null, adminToken);
+    console.log(`T78 Admin can list reviews: ${t78.status === 200 ? 'PASS' : 'FAIL'}`);
+    const reviewId = t78.data.data.length > 0 ? t78.data.data[0]._id : null;
+
+    // T79 Admin moderation works
+    if (reviewId) {
+      const t79 = await request(`/admin/reviews/${reviewId}/moderate`, 'PUT', { isModerated: true }, adminToken);
+      console.log(`T79 Admin moderation works: ${t79.status === 200 && t79.data.data.isModerated === true ? 'PASS' : 'FAIL'}`);
+    } else {
+      console.log('T79 Admin moderation works: SKIP (No reviews)');
+    }
+
+    // PAYMENTS
+    // T80 Admin can monitor payments
+    const t80 = await request('/admin/payments', 'GET', null, adminToken);
+    console.log(`T80 Admin can monitor payments: ${t80.status === 200 ? 'PASS' : 'FAIL'}`);
+
+    // AUDIT LOGS
+    // T81 Successful admin mutations create audit logs
+    const t81 = await request('/admin/audit-logs', 'GET', null, adminToken);
+    const hasAuditLogs = t81.data.data && t81.data.data.length > 0;
+    console.log(`T81 Successful admin mutations create audit logs: ${hasAuditLogs ? 'PASS' : 'FAIL'}`);
+
+    // SECURITY
+    // T82 Admin public registration remains blocked
+    const t82 = await request('/auth/register', 'POST', { name: 'Fake Admin', email: 'fake@admin.com', password: 'pass', role: 'admin' });
+    const fakeAdminCheck = await User.findOne({ email: 'fake@admin.com' });
+    console.log(`T82 Admin public registration blocked: ${fakeAdminCheck && fakeAdminCheck.role !== 'admin' ? 'PASS' : 'FAIL'}`);
+
   } catch (err) {
     console.error('Test script error:', err);
   } finally {

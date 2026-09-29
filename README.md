@@ -43,6 +43,7 @@ FIXIT/
 ## Environment Variables
 Create `.env` files in both the `client/` and `server/` directories using the provided `.env.example` templates.
 - **Backend** (`server/.env`): `PORT`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`
+- **Admin Seeding** (`server/.env`): Set `ADMIN_SEED_EMAIL` and `ADMIN_SEED_PASSWORD` to securely generate the platform admin via the seeder script.
 - **Frontend** (`client/.env`): `VITE_API_BASE_URL`
 
 ## Running the Application
@@ -59,5 +60,8 @@ Alternatively, to start them separately:
 You can verify the backend is running by navigating to `http://localhost:5000/api/health`.
 
 ## Current Status
-We are currently at **Phase 1: Project Foundation**. Basic React UI and Express backend are wired.
-
+We have successfully completed **Phase 9: Admin Dashboard & Admin Management**.
+- Full authentication and backend verification are in place.
+- Provider and Customer portals are functional.
+- Mapping and geocoding capabilities enabled.
+- A secure Admin Dashboard tracks statistics, users, reviews, services, and an immutable audit log.

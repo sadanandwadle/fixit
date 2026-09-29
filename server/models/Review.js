@@ -26,6 +26,10 @@ const ReviewSchema = new mongoose.Schema({
   },
   comment: {
     type: String
+  },
+  isModerated: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 
