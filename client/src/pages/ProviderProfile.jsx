@@ -6,22 +6,27 @@ import { Card, LoadingState, ErrorState, Button, Badge } from '../components/ui/
 const ProviderProfile = () => {
   const { id } = useParams();
   const [provider, setProvider] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProvider = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get(`/providers/${id}`);
-        setProvider(res.data.data);
+        const [providerRes, reviewsRes] = await Promise.all([
+          api.get(`/providers/${id}`),
+          api.get(`/reviews/provider/${id}`)
+        ]);
+        setProvider(providerRes.data.data);
+        setReviews(reviewsRes.data.data);
         setLoading(false);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load provider profile');
         setLoading(false);
       }
     };
-    fetchProvider();
+    fetchData();
   }, [id]);
 
   if (loading) return <LoadingState text="Loading profile..." />;
@@ -90,6 +95,26 @@ const ProviderProfile = () => {
             </Button>
           </div>
         </Card>
+
+        {reviews.length > 0 && (
+          <Card>
+            <h3 className="text-xl font-bold text-neutral-dark mb-6">Recent Reviews</h3>
+            <div className="space-y-6">
+              {reviews.map(review => (
+                <div key={review._id} className="border-b border-border-subtle last:border-0 pb-6 last:pb-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-medium text-neutral-dark">{review.customer?.name || 'Customer'}</p>
+                      <p className="text-xs text-neutral-muted">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <Badge variant="primary">★ {review.rating}</Badge>
+                  </div>
+                  <p className="text-neutral-dark mt-2">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

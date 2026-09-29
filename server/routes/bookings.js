@@ -31,4 +31,7 @@ router.post('/:id/cancel', cancelBooking);
 router.post('/:id/verify-otp', verifyOtp);
 router.post('/:id/complete', completeBooking);
 
+const { payBooking } = require('../controllers/paymentController');
+router.post('/:id/pay', payBooking);
+
 module.exports = router;

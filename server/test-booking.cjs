@@ -173,6 +173,78 @@ async function testBookingLogic() {
     const t25 = await request(`/bookings/${booking3Id}/complete`, 'POST', null, provToken);
     console.log(`T25 Complete already completed rejected: ${t25.status === 400 ? 'PASS' : 'FAIL'}`);
 
+    console.log('--- PHASE 6: PAYMENT & REVIEWS TESTS ---');
+    
+    // Create a new booking for payment and review negative testing
+    const tb4 = await request('/bookings', 'POST', { providerId: janeId, serviceId, scheduledDate: '2027-01-01', scheduledTime: '01:00 PM' }, custToken);
+    const booking4Id = tb4.data.data._id;
+
+    // T26. Payment before completion rejected
+    const t26 = await request(`/bookings/${booking4Id}/pay`, 'POST', { amount: 10 }, custToken);
+    console.log(`T26 Payment before completion rejected: ${t26.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T27. Review before completion rejected
+    const t27 = await request('/reviews', 'POST', { bookingId: booking4Id, rating: 5, comment: 'Great' }, custToken);
+    console.log(`T27 Review before completion rejected: ${t27.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // Progress booking3Id which is completed
+    // T28. Unauthenticated payment rejected
+    const t28 = await request(`/bookings/${booking3Id}/pay`, 'POST', { amount: 50 });
+    console.log(`T28 Unauthenticated payment rejected: ${t28.status === 401 ? 'PASS' : 'FAIL'}`);
+
+    // T29. Provider payment rejected
+    const t29 = await request(`/bookings/${booking3Id}/pay`, 'POST', null, provToken);
+    console.log(`T29 Provider payment rejected: ${t29.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T30. Customer paying for another customer's booking rejected
+    const t30 = await request(`/bookings/${booking3Id}/pay`, 'POST', null, cust2Token);
+    console.log(`T30 Customer paying for another customer's booking rejected: ${t30.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T31. Payment for completed booking succeeds
+    const t31 = await request(`/bookings/${booking3Id}/pay`, 'POST', { amount: 1 }, custToken);
+    console.log(`T31 Payment for completed booking succeeds: ${t31.status === 201 ? 'PASS' : 'FAIL'}`, t31.status !== 201 ? t31.data : '');
+
+    // T32. Duplicate payment rejected
+    const t32 = await request(`/bookings/${booking3Id}/pay`, 'POST', null, custToken);
+    console.log(`T32 Duplicate payment rejected: ${t32.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T33. Payment amount cannot be arbitrarily controlled by client
+    // Since we ignore the body in backend, we verify the stored amount is $50
+    const amtCheck = t31.data.data.amount === 50;
+    console.log(`T33 Payment amount cannot be arbitrarily controlled: ${amtCheck ? 'PASS' : 'FAIL'}`);
+
+    // REVIEWS
+    // T34. Unauthenticated review rejected
+    const t34 = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 5 });
+    console.log(`T34 Unauthenticated review rejected: ${t34.status === 401 ? 'PASS' : 'FAIL'}`);
+
+    // T35. Provider review creation rejected
+    const t35 = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 5 }, provToken);
+    console.log(`T35 Provider review creation rejected: ${t35.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T36. Customer reviewing another customer's booking rejected
+    const t36 = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 5 }, cust2Token);
+    console.log(`T36 Customer reviewing another's booking rejected: ${t36.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T37. Invalid rating rejected (non-numeric, <1, >5)
+    const t37a = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 'abc' }, custToken);
+    const t37b = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 0 }, custToken);
+    const t37c = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 6 }, custToken);
+    console.log(`T37 Invalid rating rejected: ${t37a.status === 400 && t37b.status === 400 && t37c.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T38. Valid review succeeds
+    const t38 = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 5, comment: 'Excellent' }, custToken);
+    console.log(`T38 Valid review succeeds: ${t38.status === 201 ? 'PASS' : 'FAIL'}`, t38.status !== 201 ? t38.data : '');
+
+    // T39. Duplicate review rejected
+    const t39 = await request('/reviews', 'POST', { bookingId: booking3Id, rating: 4 }, custToken);
+    console.log(`T39 Duplicate review rejected: ${t39.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // Check if Provider rating updated
+    const pInfo = await request('/providers', 'GET');
+    const updatedJane = pInfo.data.data.find(p => p._id === janeId);
+    console.log(`T40 Provider rating updated correctly: ${updatedJane.rating === 5 && updatedJane.reviewCount === 1 ? 'PASS' : 'FAIL'}`);
+
   } catch (err) {
     console.error('Test script error:', err);
   } finally {

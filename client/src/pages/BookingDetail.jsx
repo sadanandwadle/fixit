@@ -26,6 +26,8 @@ const BookingDetail = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [otpGenerated, setOtpGenerated] = useState(null);
   const [otpInput, setOtpInput] = useState('');
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
   const navigate = useNavigate();
 
   const fetchBooking = async () => {
@@ -70,6 +72,18 @@ const BookingDetail = () => {
       setOtpInput('');
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to verify OTP');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    setActionLoading(true);
+    try {
+      await api.post('/reviews', { bookingId: id, rating, comment });
+      await fetchBooking();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setActionLoading(false);
     }
@@ -157,6 +171,73 @@ const BookingDetail = () => {
                   Verify OTP
                 </Button>
               </div>
+            </div>
+          )}
+
+          {booking.status === 'completed' && isCustomer && (
+            <div className="mb-8 space-y-6">
+              {!booking.isPaid ? (
+                <div className="p-6 bg-surface-dim rounded-md border border-border-subtle">
+                  <h3 className="text-lg font-bold text-neutral-dark mb-2">Service Completed</h3>
+                  <p className="text-sm text-neutral-muted mb-4">Please complete the payment for your service. This is a demo payment.</p>
+                  <Button 
+                    onClick={() => handleAction('pay')} 
+                    disabled={actionLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    Pay $50.00 (Demo)
+                  </Button>
+                </div>
+              ) : (
+                <div className="p-4 bg-status-success/10 border border-status-success rounded-md">
+                  <h3 className="text-status-success font-bold text-lg mb-1">Payment Successful ✓</h3>
+                  <p className="text-sm text-neutral-dark">Thank you for your demo payment.</p>
+                </div>
+              )}
+
+              {booking.isPaid && !booking.review && (
+                <div className="p-6 bg-surface-dim rounded-md border border-border-subtle">
+                  <h3 className="text-lg font-bold text-neutral-dark mb-4">Leave a Review</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-dark mb-2">Rating (1-5)</label>
+                      <select 
+                        className="w-full sm:w-auto p-2 border border-border-subtle rounded-md bg-neutral-bg focus:outline-none focus:ring-2 focus:ring-primary"
+                        value={rating}
+                        onChange={(e) => setRating(Number(e.target.value))}
+                      >
+                        <option value={5}>5 - Excellent</option>
+                        <option value={4}>4 - Very Good</option>
+                        <option value={3}>3 - Average</option>
+                        <option value={2}>2 - Poor</option>
+                        <option value={1}>1 - Terrible</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-dark mb-2">Comment</label>
+                      <textarea 
+                        className="w-full p-3 border border-border-subtle rounded-md bg-neutral-bg focus:outline-none focus:ring-2 focus:ring-primary h-24 resize-none"
+                        placeholder="Share your experience..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleSubmitReview} disabled={actionLoading}>
+                      Submit Review
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {booking.review && (
+                <div className="p-6 bg-surface-dim rounded-md border border-border-subtle">
+                  <div className="flex justify-between mb-2">
+                    <h3 className="text-lg font-bold text-neutral-dark">Your Review</h3>
+                    <Badge variant="primary">★ {booking.review.rating}</Badge>
+                  </div>
+                  <p className="text-neutral-dark">{booking.review.comment}</p>
+                </div>
+              )}
             </div>
           )}
           

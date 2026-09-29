@@ -121,7 +121,26 @@ exports.getBooking = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to access this booking' });
     }
 
-    res.status(200).json({ success: true, data: booking });
+    // Attach payment and review status for frontend convenience
+    const Payment = require('../models/Payment');
+    const Review = require('../models/Review');
+    
+    let isPaid = false;
+    let review = null;
+    
+    if (booking.status === 'completed') {
+      const payment = await Payment.findOne({ booking: booking._id, status: 'completed' });
+      if (payment) isPaid = true;
+
+      review = await Review.findOne({ booking: booking._id });
+    }
+
+    // Convert booking to plain object so we can attach custom fields
+    const bookingObj = booking.toObject();
+    bookingObj.isPaid = isPaid;
+    bookingObj.review = review;
+
+    res.status(200).json({ success: true, data: bookingObj });
   } catch (error) {
     if (error.name === 'CastError') {
       return res.status(404).json({ success: false, message: 'Booking not found' });
