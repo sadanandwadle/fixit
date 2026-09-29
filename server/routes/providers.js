@@ -1,6 +1,10 @@
 const express = require('express');
-const { getProviders, getProvider } = require('../controllers/providerController');
+const { getProviders, getProvider, updateLocation } = require('../controllers/providerController');
+const { protect } = require('../middleware/auth');
 const router = express.Router();
+
+router.route('/location')
+  .put(protect, updateLocation);
 
 router.route('/')
   .get(getProviders);

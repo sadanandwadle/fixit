@@ -285,6 +285,94 @@ async function testBookingLogic() {
     const t47Check = await request('/notifications/unread-count', 'GET', null, custToken);
     console.log(`T47 Mark all as read works: ${t47.status === 200 && t47Check.data.count === 0 ? 'PASS' : 'FAIL'}`);
 
+    console.log('--- PHASE 8: MAPS & LOCATION TESTS ---');
+    
+    // Create a second provider for location tests (Provider B)
+    let provBRes = await request('/auth/register', 'POST', {
+      name: 'Provider B', email: 'prov_b@test.com', password: 'password123', role: 'provider'
+    });
+    if (provBRes.status === 400) provBRes = await request('/auth/login', 'POST', { email: 'prov_b@test.com', password: 'password123' });
+    const provBToken = provBRes.data.token;
+    
+    // Seed provider B profile
+    const pBProfile = await Provider.findOne({ user: (await User.findOne({ email: 'prov_b@test.com' }))._id });
+    if (!pBProfile) {
+      await Provider.create({
+        user: (await User.findOne({ email: 'prov_b@test.com' }))._id,
+        professionalName: 'Provider B Services',
+        description: 'Testing location features',
+        services: [serviceId]
+      });
+    }
+
+    // LOCATION TESTS
+    // T48 Unauthenticated location update rejected
+    const t48 = await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 73.8567 });
+    console.log(`T48 Unauthenticated location update rejected: ${t48.status === 401 ? 'PASS' : 'FAIL'}`);
+
+    // T49 Customer location update rejected
+    const t49 = await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 73.8567 }, custToken);
+    console.log(`T49 Customer location update rejected: ${t49.status === 403 ? 'PASS' : 'FAIL'}`);
+
+    // T50 Provider can update own location
+    const t50 = await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 73.8567, serviceRadius: 10 }, provToken);
+    console.log(`T50 Provider can update own location: ${t50.status === 200 ? 'PASS' : 'FAIL'}`);
+
+    // T51 Provider cannot update another provider's location
+    // Since the endpoint uses JWT identity, you can't even supply another provider's ID. 
+    // We just ensure we can't hijack by injecting an ID.
+    const t51 = await request('/providers/location', 'PUT', { _id: pBProfile ? pBProfile._id : 'hijack', latitude: 10, longitude: 10 }, provToken);
+    const hijackedCheck = await request('/providers', 'GET');
+    const pB = hijackedCheck.data.data.find(p => p.professionalName === 'Provider B Services');
+    console.log(`T51 Provider cannot update another provider's location (JWT isolated): ${pB.location.coordinates[0] !== 10 ? 'PASS' : 'FAIL'}`);
+
+    // Restore Jane's proper location after T51 side-effect
+    await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 73.8567, serviceRadius: 10 }, provToken);
+
+    // T52 Invalid latitude rejected
+    const t52 = await request('/providers/location', 'PUT', { latitude: 100, longitude: 73.8567 }, provToken);
+    console.log(`T52 Invalid latitude rejected: ${t52.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T53 Invalid longitude rejected
+    const t53 = await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 200 }, provToken);
+    console.log(`T53 Invalid longitude rejected: ${t53.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T54 Invalid radius rejected
+    const t54 = await request('/providers/location', 'PUT', { latitude: 18.5204, longitude: 73.8567, serviceRadius: -5 }, provToken);
+    console.log(`T54 Invalid radius rejected: ${t54.status === 400 ? 'PASS' : 'FAIL'}`);
+
+    // T55 Valid GeoJSON location stored correctly & Longitude/latitude order verified
+    const locCheck = t50.data.data.location;
+    console.log(`T55 GeoJSON Point [lng, lat] verified: ${locCheck.type === 'Point' && locCheck.coordinates[0] === 73.8567 && locCheck.coordinates[1] === 18.5204 ? 'PASS' : 'FAIL'}`);
+
+    // T56 Provider location retrieval works (Populated in getProvider)
+    const t56 = await request(`/providers/${janeId}`, 'GET');
+    console.log(`T56 Provider location retrieval works: ${t56.data.data.location.coordinates[0] === 73.8567 ? 'PASS' : 'FAIL'}`);
+
+    // NEARBY SEARCH TESTS
+    // Set Provider B to a different far away location (e.g. Mumbai ~120km away)
+    await request('/providers/location', 'PUT', { latitude: 19.0760, longitude: 72.8777, serviceRadius: 10 }, provBToken);
+
+    // T57 Nearby provider returned & T58 Provider outside radius excluded
+    // Search from Pune (18.5204, 73.8567) with radius 50km
+    const t57 = await request('/providers?lat=18.5204&lng=73.8567&radius=50', 'GET');
+    const nearbyNames = t57.data.data.map(p => p.professionalName);
+    console.log(`T57 Nearby provider returned (Jane found): ${nearbyNames.includes(janeProvider.professionalName) ? 'PASS' : 'FAIL'}`);
+    console.log(`T58 Provider outside radius excluded (Provider B excluded): ${!nearbyNames.includes('Provider B Services') ? 'PASS' : 'FAIL'}`);
+
+    // T59 Service filter works
+    const t59 = await request(`/providers?lat=18.5204&lng=73.8567&radius=50&service=${serviceId}`, 'GET');
+    console.log(`T59 Service filter works: ${t59.data.data.length > 0 && t59.data.data[0].services.some(s => s._id === serviceId) ? 'PASS' : 'FAIL'}`);
+
+    // T60 Provider without location handled correctly (handled by $ne [0,0] filter)
+    const t60 = await request('/providers?lat=18.5204&lng=73.8567&radius=50', 'GET');
+    const hasZeroZero = t60.data.data.some(p => p.location.coordinates[0] === 0 && p.location.coordinates[1] === 0);
+    console.log(`T60 Provider without location handled: ${!hasZeroZero ? 'PASS' : 'FAIL'}`);
+
+    // T61 Empty nearby result handled correctly
+    const t61 = await request('/providers?lat=80.0&lng=80.0&radius=10', 'GET');
+    console.log(`T61 Empty nearby result handled correctly: ${t61.data.data.length === 0 ? 'PASS' : 'FAIL'}`);
+
   } catch (err) {
     console.error('Test script error:', err);
   } finally {

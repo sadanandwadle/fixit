@@ -41,6 +41,12 @@ const ProviderSchema = new mongoose.Schema({
     type: String, // E.g., 'Mon-Fri 9AM-5PM'
     default: 'Flexible'
   },
+  serviceRadius: {
+    type: Number,
+    min: [1, 'Service radius must be at least 1 km'],
+    max: [100, 'Service radius cannot exceed 100 km'],
+    default: 10
+  },
   verified: {
     type: Boolean,
     default: false
