@@ -45,6 +45,15 @@ exports.createBooking = async (req, res) => {
       status: 'pending'
     });
 
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: provider.user,
+      type: 'BOOKING_CREATED',
+      title: 'New booking request',
+      message: 'You have received a new booking request.',
+      relatedBooking: booking._id
+    });
+
     res.status(201).json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message || 'Server Error' });
@@ -171,6 +180,15 @@ exports.acceptBooking = async (req, res) => {
     booking.status = 'accepted';
     await booking.save();
 
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: booking.customer,
+      type: 'BOOKING_ACCEPTED',
+      title: 'Booking accepted',
+      message: 'Your booking request has been accepted.',
+      relatedBooking: booking._id
+    });
+
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message || 'Server Error' });
@@ -198,6 +216,15 @@ exports.rejectBooking = async (req, res) => {
 
     booking.status = 'rejected';
     await booking.save();
+
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: booking.customer,
+      type: 'BOOKING_REJECTED',
+      title: 'Booking rejected',
+      message: 'Your booking request was rejected.',
+      relatedBooking: booking._id
+    });
 
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
@@ -242,6 +269,16 @@ exports.confirmBooking = async (req, res) => {
     };
     
     await booking.save();
+
+    const providerObj = await Provider.findById(booking.provider);
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: providerObj.user,
+      type: 'BOOKING_CONFIRMED',
+      title: 'Booking confirmed',
+      message: 'The customer has confirmed the booking.',
+      relatedBooking: booking._id
+    });
 
     // Return the plaintext OTP ONCE in this response payload.
     // It will not be exposed in standard GET requests due to select: false in the model schema.
@@ -344,6 +381,15 @@ exports.verifyOtp = async (req, res) => {
     booking.otp.isVerified = true;
     await booking.save();
 
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: booking.customer,
+      type: 'SERVICE_STARTED',
+      title: 'Service started',
+      message: 'Your service has started.',
+      relatedBooking: booking._id
+    });
+
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message || 'Server Error' });
@@ -371,6 +417,15 @@ exports.completeBooking = async (req, res) => {
 
     booking.status = 'completed';
     await booking.save();
+
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: booking.customer,
+      type: 'SERVICE_COMPLETED',
+      title: 'Service completed',
+      message: 'Your service has been completed.',
+      relatedBooking: booking._id
+    });
 
     res.status(200).json({ success: true, data: booking });
   } catch (error) {

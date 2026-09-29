@@ -49,6 +49,16 @@ exports.createReview = async (req, res) => {
       comment
     });
 
+    const providerObj = await Provider.findById(booking.provider);
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: providerObj.user,
+      type: 'REVIEW_RECEIVED',
+      title: 'New review received',
+      message: 'You received a new review from a customer.',
+      relatedBooking: booking._id
+    });
+
     res.status(201).json({ success: true, data: review });
   } catch (error) {
     if (error.code === 11000) {

@@ -9,8 +9,10 @@ import ProviderProfile from './pages/ProviderProfile';
 import BookService from './pages/BookService';
 import Bookings from './pages/Bookings';
 import BookingDetail from './pages/BookingDetail';
+import Notifications from './pages/Notifications';
 import { ProtectedRoute } from './components/ui/ProtectedRoute';
 import { Button } from './components/ui/Components';
+import Header from './components/ui/Header';
 
 function Home() {
   const { user, logout } = useContext(AuthContext);
@@ -18,7 +20,7 @@ function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-bg p-4">
       <div className="bg-surface-white p-8 rounded-xl shadow-subtle text-center max-w-md w-full border border-border-subtle">
         <h1 className="text-4xl font-bold text-primary mb-4 tracking-tight">FIXIT</h1>
-        <p className="text-neutral-muted mb-6 text-lg">Phase 4: Bookings</p>
+        <p className="text-neutral-muted mb-6 text-lg">Phase 7: Notifications</p>
         
         <div className="space-y-4 mb-8">
           <Link to="/services">
@@ -64,30 +66,38 @@ function Home() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/services" element={<Services />} />
-      <Route path="/providers" element={<Providers />} />
-      <Route path="/providers/:id" element={<ProviderProfile />} />
-      
-      <Route path="/book/:providerId" element={
-        <ProtectedRoute>
-          <BookService />
-        </ProtectedRoute>
-      } />
-      <Route path="/bookings" element={
-        <ProtectedRoute>
-          <Bookings />
-        </ProtectedRoute>
-      } />
-      <Route path="/bookings/:id" element={
-        <ProtectedRoute>
-          <BookingDetail />
-        </ProtectedRoute>
-      } />
-    </Routes>
+    <>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/providers" element={<Providers />} />
+        <Route path="/providers/:id" element={<ProviderProfile />} />
+        
+        <Route path="/book/:providerId" element={
+          <ProtectedRoute>
+            <BookService />
+          </ProtectedRoute>
+        } />
+        <Route path="/bookings" element={
+          <ProtectedRoute>
+            <Bookings />
+          </ProtectedRoute>
+        } />
+        <Route path="/bookings/:id" element={
+          <ProtectedRoute>
+            <BookingDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/notifications" element={
+          <ProtectedRoute>
+            <Notifications />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </>
   );
 }
 

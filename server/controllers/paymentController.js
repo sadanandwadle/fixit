@@ -47,6 +47,17 @@ exports.payBooking = async (req, res) => {
       transactionId
     });
 
+    const Provider = require('../models/Provider');
+    const providerObj = await Provider.findById(booking.provider);
+    const { createNotification } = require('../services/notificationService');
+    await createNotification({
+      recipient: providerObj.user,
+      type: 'PAYMENT_COMPLETED',
+      title: 'Payment received',
+      message: 'The customer has completed the demo payment for the booking.',
+      relatedBooking: booking._id
+    });
+
     res.status(201).json({ success: true, data: payment });
   } catch (error) {
     // Handle Mongoose duplicate key error safely
