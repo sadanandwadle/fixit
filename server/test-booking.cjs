@@ -157,6 +157,18 @@ async function testBookingLogic() {
     const t21 = await request(`/bookings/${booking3Id}/verify-otp`, 'POST', { otp: '000000' }, provToken);
     console.log(`T21 Invalid OTP rejected: ${t21.status === 400 ? 'PASS' : 'FAIL'}`);
 
+    // T21b. Expired OTP rejected
+    const tbExp = await request('/bookings', 'POST', { providerId: janeId, serviceId, scheduledDate: '2027-01-01', scheduledTime: '01:00 PM' }, custToken);
+    const bookingExpId = tbExp.data.data._id;
+    await request(`/bookings/${bookingExpId}/accept`, 'POST', null, provToken);
+    const tExpConf = await request(`/bookings/${bookingExpId}/confirm`, 'POST', null, custToken);
+    const expBookingDoc = await Booking.findById(bookingExpId);
+    expBookingDoc.otp.expiresAt = new Date(Date.now() - 10000);
+    await expBookingDoc.save();
+    const t21b = await request(`/bookings/${bookingExpId}/verify-otp`, 'POST', { otp: tExpConf.data.otp }, provToken);
+    console.log(`T21b Expired OTP rejected: ${t21b.status === 400 && t21b.data.message === 'OTP expired' ? 'PASS' : 'FAIL'}`);
+
+
     // T22. Valid OTP verifies and transitions to in-progress
     const t22 = await request(`/bookings/${booking3Id}/verify-otp`, 'POST', { otp }, provToken);
     console.log(`T22 Valid OTP -> in-progress: ${t22.status === 200 && t22.data.data.status === 'in-progress' ? 'PASS' : 'FAIL'}`);
