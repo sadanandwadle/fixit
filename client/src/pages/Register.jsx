@@ -9,16 +9,20 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('customer');
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await register(name, email, password, role);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,7 +79,9 @@ const Register = () => {
               options={roleOptions}
             />
             <div className="pt-2">
-              <Button type="submit">Create account</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Creating account...' : 'Create account'}
+              </Button>
             </div>
           </form>
           <div className="mt-6 text-center text-sm text-neutral-muted">

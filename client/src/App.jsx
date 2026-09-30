@@ -44,29 +44,6 @@ function Home() {
           )}
         </div>
 
-        <div className="p-4 bg-surface-dim rounded-lg text-left border border-border-subtle">
-          <p className="text-sm font-medium text-neutral-dark mb-2">User Status:</p>
-          {user ? (
-            <div className="mt-2 text-sm text-neutral-dark space-y-1">
-              <p><strong>Name:</strong> {user.name}</p>
-              <p><strong>Role:</strong> {user.role}</p>
-              <button 
-                onClick={logout} 
-                className="mt-4 w-full bg-status-error/10 text-status-error font-medium py-2 rounded hover:bg-status-error/20 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div>
-              <p className="text-status-warning font-semibold text-sm mb-3">Not Authenticated</p>
-              <div className="flex gap-2">
-                <Link to="/login" className="flex-1"><Button variant="secondary" className="w-full text-xs py-1">Login</Button></Link>
-                <Link to="/register" className="flex-1"><Button variant="secondary" className="w-full text-xs py-1">Register</Button></Link>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

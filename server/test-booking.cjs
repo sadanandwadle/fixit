@@ -444,6 +444,7 @@ async function testBookingLogic() {
     console.log(`T74 Admin can list services: ${t74.status === 200 && t74.data.data.length > 0 ? 'PASS' : 'FAIL'}`);
 
     // T75 Admin can create service
+    await Service.deleteMany({ name: 'Test Service' });
     const t75 = await request('/admin/services', 'POST', { name: 'Test Service', category: 'Test', description: 'Test' }, adminToken);
     console.log(`T75 Admin can create service: ${t75.status === 201 ? 'PASS' : 'FAIL'}`);
     const newServiceId = t75.data.data ? t75.data.data._id : null;
