@@ -16,7 +16,7 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname;
 
   const handleChange = (e) => {
     setFormData({
@@ -40,12 +40,41 @@ const LoginPage = () => {
 
       if (res.success) {
         setSuccess(`Welcome back, ${res.user.name}!`);
-        const targetPath =
-          from && from !== '/'
-            ? from
-            : res.user?.role === 'provider'
-            ? '/provider/dashboard'
-            : '/customer/dashboard';
+
+        const role = res.user?.role;
+        const isHome = !from || from === '/' || from === '/fixit' || from === '/fixit/';
+
+        let targetPath;
+        if (role === 'provider') {
+          // Providers can only be redirected to valid /provider routes, otherwise default to dashboard
+          const isProviderRoute =
+            !isHome &&
+            Boolean(from && (from === '/provider' || from.startsWith('/provider/')));
+          targetPath = isProviderRoute ? from : '/provider/dashboard';
+        } else if (role === 'customer') {
+          // Customers can only be redirected to customer-accessible routes, never provider-only routes
+          const isProviderOnly =
+            Boolean(from && (from === '/provider' || from.startsWith('/provider/') || from === '/admin' || from.startsWith('/admin/')));
+          const isCustomerRoute =
+            !isHome &&
+            !isProviderOnly &&
+            Boolean(
+              from &&
+                (from.startsWith('/customer') ||
+                  from.startsWith('/book') ||
+                  from.startsWith('/payment') ||
+                  from.startsWith('/services') ||
+                  from.startsWith('/providers') ||
+                  from.startsWith('/notifications'))
+            );
+          targetPath = isCustomerRoute ? from : '/customer/dashboard';
+        } else if (role === 'admin') {
+          const isAdminRoute = Boolean(from && !isHome && (from === '/admin' || from.startsWith('/admin/')));
+          targetPath = isAdminRoute ? from : '/admin';
+        } else {
+          targetPath = '/';
+        }
+
         setTimeout(() => {
           navigate(targetPath, { replace: true });
         }, 600);
